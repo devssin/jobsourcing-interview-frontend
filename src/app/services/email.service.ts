@@ -17,14 +17,14 @@ import {
   InterviewEmailMeta,
 } from '../models';
 
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_UPLOAD_BYTES = 500 * 1024 * 1024; // 500 MB
 const ENDPOINT_PATH    = '/api/send-interview-email';
 
 /** French-language error copy, centralised so callers can reuse. */
 export const EMAIL_ERRORS = {
   NETWORK:     'Impossible de se connecter au serveur',
   GENERIC:     "Erreur lors de l'envoi de l'email",
-  TOO_LARGE:   'Fichier trop volumineux (max 50MB)',
+  TOO_LARGE:   'Fichier trop volumineux (max 500MB)',
   TIMEOUT:     'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.',
 } as const;
 
