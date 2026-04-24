@@ -14,7 +14,9 @@ export const interviewFlowGuard: CanActivateFn = (route) => {
     case 'permissions':
       return progress.welcomeCompleted()   || router.createUrlTree(['/welcome']);
     case 'interview':
-      return progress.permissionsGranted() || router.createUrlTree(['/permissions']);
+      if (!progress.permissionsGranted()) return router.createUrlTree(['/permissions']);
+      if (progress.interviewCompleted())  return router.createUrlTree(['/complete']);
+      return true;
     case 'complete':
       return progress.interviewCompleted() || router.createUrlTree(['/interview']);
     default:

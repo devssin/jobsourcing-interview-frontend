@@ -105,7 +105,7 @@ export class InterviewComponent implements AfterViewInit, OnDestroy {
 
   // ── Confirmation dialog ────────────────────────────────────────────────────
   readonly showConfirmDialog = signal(false);
-  readonly confirmKind       = signal<'next' | 'submit' | 'back'>('next');
+  readonly confirmKind       = signal<'next' | 'submit'>('next');
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
@@ -118,19 +118,6 @@ export class InterviewComponent implements AfterViewInit, OnDestroy {
       return this.questions.activeSubQuestion()?.id ?? '';
     }
     return this.questions.currentMainQuestion().id;
-  });
-
-  /** Previous button availability — blocked mid-recording / review / save. */
-  readonly canGoBack = computed(() => {
-    if (this.isRecording() || this.isPaused()) return false;
-    if (this.inReview())                       return false;
-    if (this.store.isSaving())                 return false;
-    const p = this.questions.progress();
-    return (
-      p.mainIndex > 0 ||
-      this.questions.isOnSubQuestion() ||
-      this.questions.hasPendingSubSelection()
-    );
   });
 
   /** True whenever leaving would discard in-flight work. */
@@ -235,33 +222,13 @@ export class InterviewComponent implements AfterViewInit, OnDestroy {
     this.showConfirmDialog.set(true);
   }
 
-  /** Opens the confirmation dialog before navigating back a question. */
-  requestGoBack(): void {
-    if (!this.canGoBack()) return;
-    this.confirmKind.set('back');
-    this.showConfirmDialog.set(true);
-  }
-
   async confirmAccept(): Promise<void> {
-    const kind = this.confirmKind();
     this.showConfirmDialog.set(false);
-    if (kind === 'back') {
-      this.performGoBack();
-      return;
-    }
     await this.acceptRecording();
   }
 
   cancelAccept(): void {
     this.showConfirmDialog.set(false);
-  }
-
-  private performGoBack(): void {
-    this.clearCountdown();
-    this.recorder.reset();
-    this.revokeReviewUrl();
-    this.questions.goBack();
-    this.resetTimer();
   }
 
   // ── Browser navigation guard ──────────────────────────────────────────────

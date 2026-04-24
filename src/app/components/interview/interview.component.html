@@ -429,19 +429,6 @@
             <!-- ── Recording controls ── -->
             <div class="flex gap-2">
               @if (!isRecording() && !isPaused()) {
-                @if (canGoBack()) {
-                  <button
-                    type="button"
-                    (click)="requestGoBack()"
-                    class="btn-secondary flex items-center justify-center gap-1.5 py-2.5 px-3
-                           shrink-0"
-                    aria-label="Go back to the previous question">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="sr-only sm:not-sr-only text-sm">Previous</span>
-                  </button>
-                }
                 <button
                   (click)="startRecording()"
                   [disabled]="!cameraReady() && !cameraError()"
@@ -531,28 +518,18 @@
       <h3
         id="confirm-title"
         class="text-base font-semibold text-gray-900 dark:text-white mb-1">
-        @switch (confirmKind()) {
-          @case ('submit') { Submit your interview? }
-          @case ('back')   { Go back one question? }
-          @default         { Move to the next question? }
-        }
+        @if (confirmKind() === 'submit') { Submit your interview? }
+        @else { Move to the next question? }
       </h3>
       <p
         id="confirm-body"
         class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-        @switch (confirmKind()) {
-          @case ('submit') {
-            Your answer will be saved locally and the interview will end.
-            You won't be able to re-record after this.
-          }
-          @case ('back') {
-            You'll return to the previous step. Your saved answer stays,
-            but re-recording will overwrite it.
-          }
-          @default {
-            Your answer will be saved and you'll advance to the next question.
-            You can't return to change this answer.
-          }
+        @if (confirmKind() === 'submit') {
+          Your answer will be saved locally and the interview will end.
+          You won't be able to re-record after this.
+        } @else {
+          Your answer will be saved and you'll advance to the next question.
+          You can't return to change this answer.
         }
       </p>
       <div class="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
@@ -570,11 +547,7 @@
             ? 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-400 focus:ring-green-500'
             : ''"
           autofocus>
-          @switch (confirmKind()) {
-            @case ('submit') { Submit interview }
-            @case ('back')   { Go back }
-            @default         { Continue }
-          }
+          @if (confirmKind() === 'submit') { Submit interview } @else { Continue }
         </button>
       </div>
     </div>
