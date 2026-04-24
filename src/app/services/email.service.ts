@@ -6,8 +6,8 @@ import {
   HttpEventType,
   HttpResponse,
 } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, filter, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError, timer } from 'rxjs';
+import { catchError, filter, map, retry, tap } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
 import {
@@ -25,6 +25,7 @@ export const EMAIL_ERRORS = {
   NETWORK:     'Impossible de se connecter au serveur',
   GENERIC:     "Erreur lors de l'envoi de l'email",
   TOO_LARGE:   'Fichier trop volumineux (max 50MB)',
+  TIMEOUT:     'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.',
 } as const;
 
 @Injectable({ providedIn: 'root' })
@@ -123,6 +124,19 @@ export class EmailService {
             this.error$.next(body.message || EMAIL_ERRORS.GENERIC);
           }
         }),
+        // Retry once after 10 s on cold-start timeouts (Render free tier).
+        // Only retries on network errors (status 0) or gateway timeouts (504).
+        retry({
+          count: 1,
+          delay: (err: HttpErrorResponse) => {
+            if (err.status === 0 || err.status === 504) {
+              this.uploadProgress$.next(0);
+              this.status$.next('uploading');
+              return timer(10_000);
+            }
+            throw err;
+          },
+        }),
         catchError((err: HttpErrorResponse) => {
           const message = this.mapError(err);
           this.status$.next('failed');
@@ -130,6 +144,17 @@ export class EmailService {
           return throwError(() => ({ success: false, message }) satisfies EmailResponse);
         }),
       );
+  }
+
+  /**
+   * Fire-and-forget GET /health to wake the Render free-tier instance before
+   * the actual upload. Call this as early as possible (e.g. in ngOnInit of the
+   * complete page) so the cold-start window overlaps with video compilation.
+   */
+  warmUp(): void {
+    this.http
+      .get(`${environment.apiUrl}/health`, { responseType: 'text' })
+      .subscribe({ error: () => { /* ignore — warm-up is best-effort */ } });
   }
 
   /** Reset progress / status / error — call before re-attempting a send. */
@@ -142,10 +167,8 @@ export class EmailService {
   // ── Internals ───────────────────────────────────────────────────────────
 
   private mapError(err: HttpErrorResponse): string {
-    // Network-level / CORS / DNS — no response reached the client.
-    if (err.status === 0) return EMAIL_ERRORS.NETWORK;
-
-    // Server refused an oversized payload.
+    if (err.status === 0)   return EMAIL_ERRORS.NETWORK;
+    if (err.status === 504) return EMAIL_ERRORS.TIMEOUT;
     if (err.status === 413) return EMAIL_ERRORS.TOO_LARGE;
 
     // Prefer a server-provided message when present (some backends return
