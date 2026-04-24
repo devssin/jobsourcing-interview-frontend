@@ -47,10 +47,6 @@ export class CompleteComponent implements OnInit {
   private sendSub: Subscription | null = null;
 
   ngOnInit(): void {
-    // Wake the Render free-tier backend immediately so the cold-start window
-    // overlaps with video compilation rather than the upload itself.
-    this.emailer.warmUp();
-
     if (this.store.count() > 0 && this.phase() === 'idle') {
       void this.runPipeline();
     }

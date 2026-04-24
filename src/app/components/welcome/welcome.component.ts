@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { InterviewProgressService } from '../../services/interview-progress.service';
+import { EmailService } from '../../services/email.service';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -17,6 +18,7 @@ export class WelcomeComponent {
   private readonly progress   = inject(InterviewProgressService);
   private readonly router     = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly emailer    = inject(EmailService);
 
   private readonly installPrompt = signal<BeforeInstallPromptEvent | null>(null);
   private readonly _installed    = signal(false);
@@ -37,6 +39,10 @@ export class WelcomeComponent {
   ];
 
   constructor() {
+    // Wake the Render free-tier backend as early as possible so the cold-start
+    // window (up to ~30 s) resolves well before the upload on the complete page.
+    this.emailer.warmUp();
+
     if (typeof window === 'undefined') return;
 
     const onBeforeInstall = (e: Event) => {
