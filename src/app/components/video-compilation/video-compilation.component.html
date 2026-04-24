@@ -1,0 +1,275 @@
+@if (open()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4
+           bg-black/60 dark:bg-black/80 backdrop-blur-sm
+           transition-opacity duration-150"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="compile-title"
+    (click)="!isActive() && close()">
+    <div
+      class="w-full max-w-xl rounded-2xl bg-white dark:bg-gray-800
+             border border-gray-200 dark:border-gray-700 shadow-2xl
+             transition-colors duration-200 overflow-hidden"
+      (click)="$event.stopPropagation()">
+
+      <!-- ── Header ─────────────────────────────────────────────────── -->
+      <div class="flex items-start justify-between gap-3 px-5 py-4
+                  border-b border-gray-200 dark:border-gray-700">
+        <div class="min-w-0">
+          <h2
+            id="compile-title"
+            class="text-base font-semibold text-gray-900 dark:text-white">
+            @switch (state()) {
+              @case ('completed') { Compilation complete }
+              @case ('canceled')  { Compilation canceled }
+              @case ('error')     { Compilation failed }
+              @default            { Compile your interview }
+            }
+          </h2>
+          <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            @switch (state()) {
+              @case ('completed') {
+                A single video has been generated from your {{ progress().totalCount }} answer(s).
+              }
+              @case ('canceled') {
+                The compilation was stopped before finishing.
+              }
+              @case ('error') {
+                {{ error()?.message }}
+              }
+              @default {
+                Stitch all {{ totalRecordings() }} answer(s) into one video file for download.
+              }
+            }
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="close()"
+          [disabled]="isActive()"
+          class="shrink-0 h-8 w-8 rounded-lg inline-flex items-center justify-center
+                 text-gray-500 dark:text-gray-400
+                 hover:bg-gray-100 dark:hover:bg-gray-700
+                 disabled:opacity-40 disabled:cursor-not-allowed
+                 focus:outline-none focus:ring-2 focus:ring-primary-500
+                 transition-colors duration-150"
+          aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- ── Body ───────────────────────────────────────────────────── -->
+      <div class="p-5">
+
+        <!-- IDLE — pre-start summary -->
+        @if (state() === 'idle') {
+          <div class="flex flex-col gap-4">
+            <div class="flex items-start gap-3 rounded-xl bg-blue-50 dark:bg-blue-900/20
+                        border border-blue-100 dark:border-blue-800/50 p-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd"/>
+              </svg>
+              <p class="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                Compilation plays each answer in real time, so it takes about as long as
+                your total recorded time. Keep this tab in the foreground.
+              </p>
+            </div>
+
+            @if (totalRecordings() === 0) {
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                No recordings found to compile.
+              </p>
+            }
+
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+              <button
+                type="button"
+                (click)="close()"
+                class="btn-secondary py-2.5 px-4">
+                Cancel
+              </button>
+              <button
+                type="button"
+                (click)="start()"
+                [disabled]="totalRecordings() === 0 || !compiler.isSupported"
+                class="btn-primary py-2.5 px-4 inline-flex items-center justify-center gap-1.5
+                       disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/>
+                </svg>
+                Start compilation
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- PREPARING / COMPILING / FINALIZING -->
+        @if (isActive()) {
+          <div class="flex flex-col gap-4">
+
+            <div class="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/50
+                        border border-gray-100 dark:border-gray-700 p-3">
+              <app-loading-spinner size="md" color="blue" />
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {{ progress().currentLabel }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  @if (progress().totalCount > 0) {
+                    Clip {{ progress().currentIndex }} of {{ progress().totalCount }}
+                    @if (etaLabel()) { · {{ etaLabel() }} }
+                  } @else {
+                    Preparing…
+                  }
+                </p>
+              </div>
+              <span
+                class="shrink-0 text-sm font-mono font-semibold
+                       text-gray-700 dark:text-gray-200"
+                aria-live="polite">
+                {{ progress().percent }}%
+              </span>
+            </div>
+
+            <app-progress-bar
+              [value]="progress().percent"
+              color="blue"
+              size="md"
+              label="Compilation progress"
+              [showValue]="false" />
+
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span>Elapsed <span class="font-mono">{{ elapsedLabel() }}</span></span>
+              @if (etaLabel()) {
+                <span>{{ etaLabel() }}</span>
+              }
+            </div>
+
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+              <button
+                type="button"
+                (click)="cancel()"
+                class="btn-secondary py-2.5 px-4 inline-flex items-center justify-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75A.75.75 0 0 0 7.25 3h-1.5ZM12.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-1.5Z"/>
+                </svg>
+                Cancel compilation
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- COMPLETED — preview + actions -->
+        @if (state() === 'completed' && result(); as r) {
+          <div class="flex flex-col gap-4">
+
+            <div class="relative rounded-xl overflow-hidden bg-black
+                        border border-gray-200 dark:border-gray-800 shadow-sm">
+              <video
+                #previewEl
+                controls
+                preload="metadata"
+                [poster]="r.thumbnailUrl || null"
+                class="w-full aspect-video block bg-black"
+                aria-label="Preview of the compiled interview video">
+              </video>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 p-2">
+                <p class="text-gray-500 dark:text-gray-400 uppercase tracking-widest">Duration</p>
+                <p class="mt-0.5 font-mono font-semibold text-gray-900 dark:text-white">
+                  {{ compiler.formatDuration(r.durationMs) }}
+                </p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 p-2">
+                <p class="text-gray-500 dark:text-gray-400 uppercase tracking-widest">Size</p>
+                <p class="mt-0.5 font-mono font-semibold text-gray-900 dark:text-white">
+                  {{ compiler.formatBytes(r.sizeBytes) }}
+                </p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 p-2">
+                <p class="text-gray-500 dark:text-gray-400 uppercase tracking-widest">Clips</p>
+                <p class="mt-0.5 font-mono font-semibold text-gray-900 dark:text-white">
+                  {{ progress().totalCount }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 pt-1">
+              <button
+                type="button"
+                (click)="restart()"
+                class="btn-secondary py-2.5 px-4 inline-flex items-center justify-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd"/>
+                </svg>
+                Re-compile
+              </button>
+              <button
+                type="button"
+                (click)="download()"
+                class="btn-primary py-2.5 px-4 inline-flex items-center justify-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"/>
+                  <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/>
+                </svg>
+                Download video
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ERROR / CANCELED — retry path -->
+        @if (state() === 'error' || state() === 'canceled') {
+          <div class="flex flex-col gap-4">
+            <div
+              class="flex items-start gap-3 rounded-xl p-3 transition-colors duration-200"
+              [class]="state() === 'error'
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50'
+                : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50'"
+              role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5 shrink-0 mt-0.5"
+                   [class]="state() === 'error'
+                     ? 'text-red-500 dark:text-red-400'
+                     : 'text-amber-500 dark:text-amber-400'"
+                   viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+              </svg>
+              <p
+                class="text-sm leading-relaxed"
+                [class]="state() === 'error'
+                  ? 'text-red-700 dark:text-red-300'
+                  : 'text-amber-700 dark:text-amber-300'">
+                {{ error()?.message ?? 'Compilation was canceled.' }}
+              </p>
+            </div>
+
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <button
+                type="button"
+                (click)="close()"
+                class="btn-secondary py-2.5 px-4">
+                Close
+              </button>
+              <button
+                type="button"
+                (click)="restart()"
+                class="btn-primary py-2.5 px-4 inline-flex items-center justify-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd"/>
+                </svg>
+                @if (state() === 'error') { Retry compilation } @else { Restart compilation }
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+  </div>
+}

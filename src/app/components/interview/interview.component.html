@@ -1,0 +1,583 @@
+<div
+  class="min-h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white
+         transition-colors duration-200"
+  role="main"
+  aria-label="Interview session">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+
+  <!-- ── Overall interview progress ─────────────────────────────────────── -->
+  <section class="mb-5" aria-labelledby="interview-progress-label">
+    <div class="flex items-baseline justify-between mb-1.5">
+      <span
+        id="interview-progress-label"
+        class="text-xs font-semibold uppercase tracking-widest text-gray-600 dark:text-gray-300
+               transition-colors duration-200">
+        Interview progress
+      </span>
+      <span
+        class="text-xs font-mono font-medium text-gray-500 dark:text-gray-400
+               transition-colors duration-200"
+        aria-hidden="true">
+        {{ store.count() }} / {{ questions.progress().totalMain }}
+      </span>
+    </div>
+    <div
+      class="w-full h-2 rounded-full overflow-hidden bg-blue-200 dark:bg-blue-800
+             transition-colors duration-200"
+      role="progressbar"
+      [attr.aria-valuenow]="overallProgressPercent()"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-label="Overall interview progress">
+      <div
+        class="h-full rounded-full bg-blue-600 dark:bg-blue-500
+               transition-[width,background-color] duration-500 ease-out"
+        [style.width.%]="overallProgressPercent()">
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Storage warning banner ─────────────────────────────────────────── -->
+  @if (store.storageWarning().level !== 'none') {
+    <div
+      class="flex items-start gap-3 rounded-xl p-3 mb-5 text-sm transition-colors duration-200"
+      [class]="store.storageWarning().level === 'critical'
+        ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300'
+        : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-300'"
+      role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+      </svg>
+      {{ store.storageWarning().message }}
+    </div>
+  }
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- ── Left: Video viewport ─────────────────────────────────────────── -->
+    <div class="lg:col-span-2 flex flex-col gap-4">
+
+      <div class="relative w-full aspect-video rounded-2xl overflow-hidden
+                  bg-gray-950 dark:bg-black shadow-lg dark:shadow-black/40
+                  border border-gray-200 dark:border-gray-800
+                  transition-colors duration-200">
+
+        <!-- Live camera (always in DOM so @ViewChild can attach the stream) -->
+        <video
+          #liveEl
+          autoplay
+          muted
+          playsinline
+          [class.hidden]="!cameraReady() || inReview()"
+          class="absolute inset-0 w-full h-full object-cover"
+          aria-label="Live camera preview">
+        </video>
+
+        <!-- ── Review player ── -->
+        @if (inReview()) {
+          <video
+            #reviewEl
+            controls
+            autoplay
+            playsinline
+            class="absolute inset-0 w-full h-full object-cover bg-black"
+            aria-label="Review your recorded answer">
+          </video>
+          <div class="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5
+                      rounded-full bg-black/70 backdrop-blur-sm pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-amber-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
+              <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-xs font-bold tracking-widest text-amber-400">REVIEW</span>
+          </div>
+        }
+
+        <!-- Camera loading -->
+        @if (!inReview() && !cameraReady() && !cameraError()) {
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <app-loading-spinner size="lg" color="gray" label="Starting camera…" />
+          </div>
+        }
+
+        <!-- Camera error -->
+        @if (!inReview() && cameraError()) {
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827 11.25 11.25 0 0 1 10.675 8.803ZM15.75 12c0 .349-.03.69-.086 1.024l-6.688-6.688A5.25 5.25 0 0 1 15.75 12Z"/>
+            </svg>
+            <p class="text-sm text-gray-500">Camera unavailable.<br>Answers will be audio-only.</p>
+          </div>
+        }
+
+        <!-- Contrast gradient — keeps on-video badges & timer legible over
+             arbitrary camera feeds, in both light and dark themes. Placed
+             after the video block so DOM order puts subsequent badges on top. -->
+        <div
+          class="pointer-events-none absolute inset-x-0 top-0 h-20
+                 bg-gradient-to-b from-black/60 to-transparent"
+          aria-hidden="true"></div>
+        <div
+          class="pointer-events-none absolute inset-x-0 bottom-0 h-16
+                 bg-gradient-to-t from-black/50 to-transparent"
+          aria-hidden="true"></div>
+
+        <!-- Recording indicator -->
+        @if (isRecording()) {
+          <div class="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5
+                      rounded-full bg-black/70 backdrop-blur-sm">
+            <span class="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" aria-hidden="true"></span>
+            <span class="text-xs font-bold tracking-widest text-white">REC</span>
+          </div>
+        }
+
+        <!-- Paused indicator -->
+        @if (isPaused()) {
+          <div class="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5
+                      rounded-full bg-black/70 backdrop-blur-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75A.75.75 0 0 0 7.25 3h-1.5ZM12.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-1.5Z"/>
+            </svg>
+            <span class="text-xs font-bold tracking-widest text-yellow-400">PAUSED</span>
+          </div>
+        }
+
+        <!-- Timer (not shown during review) -->
+        @if (!inReview()) {
+          <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm">
+            <span class="text-sm font-mono font-bold"
+                  [class]="timeRemaining() < 20 ? 'text-red-400' : 'text-white'">
+              {{ formatTime(timeRemaining()) }}
+            </span>
+          </div>
+        }
+
+        <!-- Idle overlay -->
+        @if (!inReview() && !isRecording() && !isPaused() && cameraReady() && !questions.hasPendingSubSelection()) {
+          <div class="absolute inset-0 bg-black/30 flex items-center justify-center
+                      transition-opacity duration-300">
+            <p class="text-sm font-medium text-white/80">Press record when ready</p>
+          </div>
+        }
+
+      </div>
+
+      <!-- Time-remaining progress bar (active recording only) -->
+      @if (isRecording() || isPaused()) {
+        <app-progress-bar
+          [value]="timePercent()"
+          label="Time used"
+          [color]="timerColor()"
+          size="sm" />
+      }
+
+      <!-- Session storage footer -->
+      <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500
+                  px-1 transition-colors duration-200">
+        <span>
+          {{ store.count() }} / {{ questions.progress().totalMain }}
+          answer{{ store.count() === 1 ? '' : 's' }} saved
+        </span>
+        @if (store.totalSizeBytes() > 0) {
+          <span>{{ store.formatBytes(store.totalSizeBytes()) }} total</span>
+        }
+      </div>
+
+    </div>
+
+    <!-- ── Right: Question + Controls ───────────────────────────────────── -->
+    <div class="lg:col-span-1 flex flex-col gap-4">
+
+      <!-- ════════════════════════════════════════════════════════════
+           SUB-QUESTION SELECTION — shown when main answer was accepted
+           and question has conditional sub-questions
+           ════════════════════════════════════════════════════════════ -->
+      @if (questions.hasPendingSubSelection()) {
+        <div class="card p-5 flex flex-col gap-4">
+
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-widest
+                         text-primary-600 dark:text-primary-400">
+              Question {{ questions.progress().mainIndex + 1 }}
+            </span>
+            <h2 class="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+              Does any of the following apply to your situation?
+            </h2>
+          </div>
+
+          <div class="flex flex-col gap-2" role="list" aria-label="Select a follow-up question">
+            @for (sub of questions.pendingSubQuestions(); track sub.id) {
+              <button
+                (click)="selectSubQuestion(sub)"
+                role="listitem"
+                class="text-left rounded-xl border border-gray-200 dark:border-gray-700
+                       bg-white dark:bg-gray-800 hover:border-primary-400 dark:hover:border-primary-500
+                       hover:bg-primary-50 dark:hover:bg-primary-900/20
+                       p-3.5 transition-colors duration-150 focus:outline-none
+                       focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+                       dark:focus:ring-offset-gray-900">
+                <span class="block text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
+                  {{ sub.conditionLabel }}
+                </span>
+                <span class="text-sm text-gray-800 dark:text-gray-200 leading-snug">
+                  {{ sub.text }}
+                </span>
+              </button>
+            }
+          </div>
+
+          <button
+            (click)="skipSubQuestions()"
+            class="btn-secondary py-2.5 text-sm flex items-center justify-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z"/>
+            </svg>
+            Skip — none apply
+          </button>
+        </div>
+
+      } @else {
+
+        <!-- ════════════════════════════════════════════════════════════
+             QUESTION CARD — main or sub-question
+             ════════════════════════════════════════════════════════════ -->
+        <div class="card p-5 flex-1" [@questionEnter]="questionKey()">
+
+          <!-- Header row: counter + category + progress dots -->
+          <div class="flex items-start justify-between mb-3 gap-2">
+            <div class="flex flex-col gap-1 min-w-0">
+              <span class="text-xs font-semibold uppercase tracking-widest
+                           text-primary-600 dark:text-primary-400 transition-colors duration-200">
+                @if (questions.isOnSubQuestion()) {
+                  Follow-up · Q{{ questions.progress().mainIndex + 1 }}
+                } @else {
+                  Question {{ questions.progress().mainIndex + 1 }}
+                  / {{ questions.progress().totalMain }}
+                }
+              </span>
+              @if (questions.currentMainQuestion(); as q) {
+                <span class="text-xs text-gray-400 dark:text-gray-500 truncate
+                             transition-colors duration-200">
+                  {{ questions.getCategoryLabel(q.category) }}
+                </span>
+              }
+            </div>
+
+            <!-- Progress dots -->
+            <div class="flex gap-1 shrink-0 flex-wrap justify-end" aria-hidden="true">
+              @for (_ of questions.getAll(); track $index) {
+                <span class="h-2 w-2 rounded-full transition-colors duration-200"
+                      [class]="$index < store.count()
+                        ? 'bg-green-500 dark:bg-green-400'
+                        : $index === questions.progress().mainIndex
+                          ? 'bg-primary-600 dark:bg-primary-400'
+                          : 'bg-gray-200 dark:bg-gray-700'">
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Sub-question context label -->
+          @if (questions.isOnSubQuestion() && questions.activeSubQuestion(); as sub) {
+            <div class="mb-2 flex items-center gap-1.5">
+              <span class="inline-block rounded-full bg-primary-100 dark:bg-primary-900/40
+                           text-primary-700 dark:text-primary-300 text-xs font-semibold px-2 py-0.5">
+                {{ sub.conditionLabel }}
+              </span>
+            </div>
+          }
+
+          <!-- Question text -->
+          <p class="text-gray-900 dark:text-white font-medium leading-relaxed transition-colors duration-200">
+            @if (questions.isOnSubQuestion() && questions.activeSubQuestion(); as sub) {
+              {{ sub.text }}
+            } @else {
+              {{ questions.currentMainQuestion().text }}
+            }
+          </p>
+
+          <!-- "Up next" preview (only in review mode and not last question) -->
+          @if (inReview() && !questions.isLastMainQuestion() && !questions.isOnSubQuestion()) {
+            @if (questions.getNext(); as next) {
+              <p class="mt-4 text-xs text-gray-400 dark:text-gray-500 italic transition-colors duration-200">
+                Next: {{ next.text.length > 60 ? (next.text | slice:0:60) + '…' : next.text }}
+              </p>
+            }
+          }
+
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             CONTROLS CARD
+             ════════════════════════════════════════════════════════════ -->
+        <div class="card p-5">
+
+          <!-- Recording error banner -->
+          @if (recError()) {
+            <div
+              role="alert"
+              class="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20
+                     border border-red-200 dark:border-red-800/50 p-3 mb-4
+                     transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500 dark:text-red-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/>
+              </svg>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-red-700 dark:text-red-300">{{ recError()!.message }}</p>
+                <button
+                  type="button"
+                  (click)="retryRecording()"
+                  class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold
+                         text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100
+                         focus:outline-none focus:underline">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd"/>
+                  </svg>
+                  Retry recording
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ── Review-mode controls ── -->
+          @if (inReview()) {
+
+            <!-- Recording metadata -->
+            <div class="flex items-center justify-between rounded-lg
+                        bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700
+                        px-3 py-2 mb-4 text-xs transition-colors duration-200">
+              <span class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd"/>
+                </svg>
+                {{ store.formatDuration(currentResultDurationMs()) }}
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path d="M15.5 2A1.5 1.5 0 0 0 14 3.5v13a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 16.5 2h-1ZM9.5 6A1.5 1.5 0 0 0 8 7.5v9A1.5 1.5 0 0 0 9.5 18h1a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 10.5 6h-1ZM3.5 10A1.5 1.5 0 0 0 2 11.5v5A1.5 1.5 0 0 0 3.5 18h1A1.5 1.5 0 0 0 6 16.5v-5A1.5 1.5 0 0 0 4.5 10h-1Z"/>
+                </svg>
+                {{ store.formatBytes(currentResultSize()) }}
+              </span>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed transition-colors duration-200">
+              Watch your answer above. Happy with it?
+            </p>
+
+            <div class="flex flex-col gap-2">
+              <!-- Retake -->
+              <button
+                (click)="retake()"
+                [disabled]="store.isSaving()"
+                class="btn-secondary w-full py-2.5 flex items-center justify-center gap-1.5
+                       disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd"/>
+                </svg>
+                Retake
+              </button>
+
+              <!-- Accept / Submit -->
+              @if (questions.isLastMainQuestion() && !questions.isOnSubQuestion()) {
+                <button
+                  (click)="requestAccept()"
+                  [disabled]="store.isSaving()"
+                  class="btn-primary w-full py-2.5 flex items-center justify-center gap-1.5
+                         bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-400
+                         focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                  @if (store.isSaving()) {
+                    <app-loading-spinner size="sm" color="white" />
+                    Saving…
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/>
+                    </svg>
+                    Submit interview
+                  }
+                </button>
+              } @else {
+                <button
+                  (click)="requestAccept()"
+                  [disabled]="store.isSaving()"
+                  class="btn-primary w-full py-2.5 flex items-center justify-center gap-1.5
+                         disabled:opacity-50 disabled:cursor-not-allowed">
+                  @if (store.isSaving()) {
+                    <app-loading-spinner size="sm" color="white" />
+                    Saving…
+                  } @else {
+                    Use this answer
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+                    </svg>
+                  }
+                </button>
+              }
+            </div>
+
+            <!-- IDB save progress bar -->
+            @if (store.isSaving()) {
+              <app-progress-bar
+                [value]="store.progress().percent"
+                label="Saving to local backup"
+                color="blue"
+                size="sm"
+                class="mt-3 block" />
+            }
+
+          } @else {
+
+            <!-- ── Recording controls ── -->
+            <div class="flex gap-2">
+              @if (!isRecording() && !isPaused()) {
+                @if (canGoBack()) {
+                  <button
+                    type="button"
+                    (click)="requestGoBack()"
+                    class="btn-secondary flex items-center justify-center gap-1.5 py-2.5 px-3
+                           shrink-0"
+                    aria-label="Go back to the previous question">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="sr-only sm:not-sr-only text-sm">Previous</span>
+                  </button>
+                }
+                <button
+                  (click)="startRecording()"
+                  [disabled]="!cameraReady() && !cameraError()"
+                  class="flex-1 btn-primary flex items-center justify-center gap-2 py-2.5
+                         disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span class="h-2 w-2 rounded-full bg-white" aria-hidden="true"></span>
+                  Record answer
+                </button>
+              } @else {
+                <!-- Pause / Resume -->
+                <button
+                  (click)="togglePause()"
+                  class="flex-1 btn-secondary flex items-center justify-center gap-1.5 py-2.5">
+                  @if (isPaused()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.84Z"/>
+                    </svg>
+                    Resume
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75A.75.75 0 0 0 7.25 3h-1.5ZM12.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-1.5Z"/>
+                    </svg>
+                    Pause
+                  }
+                </button>
+
+                <!-- Stop -->
+                <button
+                  (click)="stopRecording()"
+                  class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-white
+                         bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500
+                         focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
+                         dark:focus:ring-offset-gray-800 transition-colors duration-200">
+                  <span class="h-2 w-2 rounded-sm bg-white" aria-hidden="true"></span>
+                  Stop
+                </button>
+              }
+            </div>
+
+            <p class="mt-4 text-xs text-gray-400 dark:text-gray-500 text-center transition-colors duration-200">
+              @if (isRecording() || isPaused()) {
+                Elapsed
+                <span class="font-mono font-semibold text-gray-700 dark:text-gray-200">
+                  {{ formatTime(elapsedSeconds()) }}
+                </span>
+                · {{ formatTime(timeRemaining()) }} remaining
+                · Press
+                <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600
+                            bg-gray-50 dark:bg-gray-700 text-[10px] font-mono">Space</kbd>
+                or
+                <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600
+                            bg-gray-50 dark:bg-gray-700 text-[10px] font-mono">Enter</kbd>
+                to stop.
+              } @else {
+                You have {{ formatTime(currentDuration()) }} per answer · Press
+                <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600
+                            bg-gray-50 dark:bg-gray-700 text-[10px] font-mono">Space</kbd>
+                to record.
+              }
+            </p>
+
+          }
+        </div>
+
+      }
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Confirmation dialog ──────────────────────────────────────────────── -->
+@if (showConfirmDialog()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4
+           bg-black/50 dark:bg-black/70 backdrop-blur-sm
+           transition-opacity duration-150"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-title"
+    aria-describedby="confirm-body"
+    (click)="cancelAccept()">
+    <div
+      class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-800
+             border border-gray-200 dark:border-gray-700 shadow-xl
+             p-5 transition-colors duration-200"
+      (click)="$event.stopPropagation()">
+      <h3
+        id="confirm-title"
+        class="text-base font-semibold text-gray-900 dark:text-white mb-1">
+        @switch (confirmKind()) {
+          @case ('submit') { Submit your interview? }
+          @case ('back')   { Go back one question? }
+          @default         { Move to the next question? }
+        }
+      </h3>
+      <p
+        id="confirm-body"
+        class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+        @switch (confirmKind()) {
+          @case ('submit') {
+            Your answer will be saved locally and the interview will end.
+            You won't be able to re-record after this.
+          }
+          @case ('back') {
+            You'll return to the previous step. Your saved answer stays,
+            but re-recording will overwrite it.
+          }
+          @default {
+            Your answer will be saved and you'll advance to the next question.
+            You can't return to change this answer.
+          }
+        }
+      </p>
+      <div class="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        <button
+          type="button"
+          (click)="cancelAccept()"
+          class="btn-secondary py-2.5 px-4">
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="confirmAccept()"
+          class="btn-primary py-2.5 px-4"
+          [class]="confirmKind() === 'submit'
+            ? 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-400 focus:ring-green-500'
+            : ''"
+          autofocus>
+          @switch (confirmKind()) {
+            @case ('submit') { Submit interview }
+            @case ('back')   { Go back }
+            @default         { Continue }
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+</div>

@@ -1,0 +1,320 @@
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
+
+  <!-- Mobile page header ─────────────────────────────────────── -->
+  <div class="lg:hidden text-center mb-8">
+    <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl
+                bg-amber-50 dark:bg-amber-900/30 mb-3 transition-colors duration-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1.5 transition-colors duration-200">
+      Camera &amp; Microphone Access
+    </h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
+      Grant access to record your interview responses
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+    <!-- ── LEFT: Camera Preview ──────────────────────────────── -->
+    <div class="lg:col-span-3 flex flex-col gap-4">
+
+      <!-- Viewport ─────────────────── -->
+      <div class="relative w-full aspect-video rounded-2xl overflow-hidden
+                  bg-gray-950 dark:bg-black shadow-xl
+                  border border-gray-200 dark:border-gray-800 transition-colors duration-200">
+
+        <!-- Live stream (always in DOM; opacity hides it until active) -->
+        <video
+          #previewEl
+          autoplay
+          muted
+          playsinline
+          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+          [class.opacity-0]="!camera.isStreaming()"
+          aria-label="Live camera preview">
+        </video>
+
+        <!-- State overlays ────────── -->
+        @if (!camera.isStreaming()) {
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
+
+            @if (permissionState() === 'checking') {
+              <app-loading-spinner size="lg" color="gray" />
+              <p class="text-sm font-medium text-gray-500">Requesting permission…</p>
+            }
+
+            @else if (permissionState() === 'granted') {
+              <app-loading-spinner size="lg" color="gray" label="Starting preview…" />
+            }
+
+            @else if (permissionState() === 'denied') {
+              <div class="h-16 w-16 rounded-2xl bg-red-900/30 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 1 0 1.06-1.06l-18-18ZM22.676 12.553a11.249 11.249 0 0 1-2.631 4.31l-3.099-3.099a5.25 5.25 0 0 0-6.71-6.71L7.759 4.577a11.217 11.217 0 0 1 4.242-.827 11.25 11.25 0 0 1 10.675 8.803ZM15.75 12c0 .349-.03.69-.086 1.024l-6.688-6.688A5.25 5.25 0 0 1 15.75 12Z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-300">Camera access denied</p>
+                <p class="text-xs text-gray-500 mt-1">Update your browser settings and try again</p>
+              </div>
+            }
+
+            @else {
+              <!-- Default placeholder -->
+              <div class="h-16 w-16 rounded-2xl bg-gray-800/70 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M4.5 4.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8.25a3 3 0 0 0 3-3v-9a3 3 0 0 0-3-3H4.5ZM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06Z" />
+                </svg>
+              </div>
+              <p class="text-sm text-gray-600">
+                Grant permissions to see your live preview
+              </p>
+            }
+
+          </div>
+        }
+
+        <!-- LIVE badge ─────────────── -->
+        @if (camera.isStreaming()) {
+          <div class="absolute top-3 left-3 flex items-center gap-1.5
+                      px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm">
+            <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></span>
+            <span class="text-xs font-bold tracking-widest text-white">LIVE PREVIEW</span>
+          </div>
+        }
+
+        <!-- Device count badge ──────── -->
+        @if (camera.isStreaming() && camera.videoDevices().length > 0) {
+          <div class="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm">
+            <p class="text-xs text-gray-300 font-medium">
+              {{ camera.videoDevices().length }} camera{{ camera.videoDevices().length > 1 ? 's' : '' }} found
+            </p>
+          </div>
+        }
+
+      </div>
+
+      <!-- Caption ──────────────────── -->
+      <p class="text-xs text-center text-gray-400 dark:text-gray-500 transition-colors duration-200">
+        @if (camera.isStreaming()) {
+          Your camera is working correctly — this is how you'll appear during the interview.
+        } @else {
+          Your live preview will appear here once permissions are granted.
+        }
+      </p>
+
+      <!-- Camera switcher (multiple cameras) ───────────────── -->
+      @if (camera.isStreaming() && camera.videoDevices().length > 1) {
+        <div class="card p-4">
+          <p class="text-xs font-semibold uppercase tracking-widest
+                     text-gray-500 dark:text-gray-400 mb-3 transition-colors duration-200">
+            Switch camera
+          </p>
+          <div class="flex flex-col gap-1">
+            @for (device of camera.videoDevices(); track device.deviceId) {
+              <button
+                (click)="switchCamera(device.deviceId)"
+                class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-left
+                       text-gray-700 dark:text-gray-300
+                       hover:bg-gray-100 dark:hover:bg-gray-700/50
+                       focus:outline-none focus:ring-2 focus:ring-blue-500/40
+                       transition-colors duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M4.5 4.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8.25a3 3 0 0 0 3-3v-9a3 3 0 0 0-3-3H4.5ZM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06Z" />
+                </svg>
+                <span class="flex-1 truncate">{{ device.label }}</span>
+                @if (device.facing !== 'unknown') {
+                  <span class="text-xs text-gray-400 dark:text-gray-500 capitalize shrink-0">
+                    {{ device.facing }}
+                  </span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+
+    <!-- ── RIGHT: Permission Controls ───────────────────────── -->
+    <div class="lg:col-span-2 flex flex-col gap-5">
+
+      <!-- Desktop header ───────────── -->
+      <div class="hidden lg:block">
+        <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl
+                    bg-amber-50 dark:bg-amber-900/30 mb-4 transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1.5 transition-colors duration-200">
+          Camera &amp; Microphone Access
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed transition-colors duration-200">
+          We need access to your camera and microphone to record your interview responses.
+        </p>
+      </div>
+
+      <!-- Browser not supported ────── -->
+      @if (!camera.isSupported) {
+        <div class="rounded-xl border border-red-200 dark:border-red-800
+                    bg-red-50 dark:bg-red-900/20 p-4 transition-colors duration-200"
+             role="alert">
+          <div class="flex gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 dark:text-red-400 shrink-0 mt-px" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+            </svg>
+            <div>
+              <p class="text-sm font-semibold text-red-800 dark:text-red-300">Browser not supported</p>
+              <p class="mt-0.5 text-sm text-red-700 dark:text-red-400">
+                Camera access requires Chrome, Firefox, Edge, or Safari. Please switch browsers to continue.
+              </p>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Device status rows ───────── -->
+      <div class="card overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50 p-0">
+        @for (device of devices; track device.key) {
+          <div class="flex items-center gap-3 px-4 py-3.5">
+
+            <!-- Icon -->
+            <div class="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200"
+                 [class]="stateColor(device.key).bg">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5 transition-colors duration-200"
+                   [class]="stateColor(device.key).icon"
+                   viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path [attr.d]="device.iconPath" />
+              </svg>
+            </div>
+
+            <!-- Label + status -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white transition-colors duration-200">
+                {{ device.label }}
+              </p>
+              <p class="text-sm transition-colors duration-200" [class]="stateColor(device.key).text">
+                @if (permissionState() === 'checking') {
+                  Requesting access&hellip;
+                } @else {
+                  {{ stateLabel(device.key) }}
+                }
+              </p>
+            </div>
+
+            <!-- Indicator -->
+            @if (permissionState() === 'checking') {
+              <app-loading-spinner size="sm" color="blue" />
+            } @else if (permissionState() === 'granted') {
+              <span class="flex h-7 w-7 items-center justify-center rounded-full
+                           bg-green-100 dark:bg-green-900/30 transition-colors duration-200"
+                    aria-label="Access granted">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-600 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            } @else if (permissionState() === 'denied') {
+              <span class="flex h-7 w-7 items-center justify-center rounded-full
+                           bg-red-100 dark:bg-red-900/30 transition-colors duration-200"
+                    aria-label="Access denied">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            } @else {
+              <span class="h-7 w-7 rounded-full border-2 border-gray-200 dark:border-gray-700
+                           transition-colors duration-200"
+                    aria-hidden="true">
+              </span>
+            }
+
+          </div>
+        }
+      </div>
+
+      <!-- Denied: browser instructions ──────────────────────── -->
+      @if (permissionState() === 'denied') {
+        <div class="rounded-xl border border-amber-200 dark:border-amber-700
+                    bg-amber-50 dark:bg-amber-900/20 p-4 transition-colors duration-200"
+             role="alert">
+          <p class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2.5">
+            How to grant access
+          </p>
+          <ol class="space-y-1.5 list-none">
+            @for (step of ['Click the lock or camera icon in your browser\'s address bar',
+                           'Set Camera and Microphone to Allow',
+                           'Press Try Again below']; track $index) {
+              <li class="flex items-start gap-2.5 text-sm text-amber-700 dark:text-amber-400">
+                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full
+                             bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200
+                             text-xs font-bold mt-px">
+                  {{ $index + 1 }}
+                </span>
+                {{ step }}
+              </li>
+            }
+          </ol>
+        </div>
+      }
+
+      <!-- Action buttons ───────────── -->
+      <div class="flex flex-col gap-2.5">
+
+        <!-- Check / Retry -->
+        @if (permissionState() !== 'granted') {
+          <button
+            (click)="checkPermissions()"
+            [disabled]="permissionState() === 'checking' || !camera.isSupported"
+            class="btn-primary flex items-center justify-center gap-2 py-3
+                   disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (permissionState() === 'checking') {
+              <app-loading-spinner size="sm" color="white" />
+              Requesting access&hellip;
+            } @else if (permissionState() === 'denied') {
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clip-rule="evenodd" />
+              </svg>
+              Try Again
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clip-rule="evenodd" />
+              </svg>
+              Check Permissions
+            }
+          </button>
+        }
+
+        <!-- Continue to Interview -->
+        <button
+          (click)="proceed()"
+          [disabled]="permissionState() !== 'granted'"
+          class="flex items-center justify-center gap-2 py-3 px-4 w-full rounded-lg font-semibold text-sm
+                 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
+                 dark:focus:ring-offset-gray-900
+                 bg-green-600 hover:bg-green-700 text-white focus:ring-green-500
+                 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-green-600">
+          Continue to Interview
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+          </svg>
+        </button>
+
+      </div>
+
+      <!-- Privacy note ─────────────── -->
+      <p class="text-xs text-center text-gray-400 dark:text-gray-500 leading-relaxed transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-3.5 w-3.5 mr-1 -mt-0.5 text-gray-400 dark:text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+        </svg>
+        Recordings are encrypted in transit and at rest. We never access your camera outside of active interview sessions.
+      </p>
+
+    </div>
+  </div>
+
+</div>

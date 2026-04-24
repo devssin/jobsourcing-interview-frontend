@@ -1,0 +1,180 @@
+<div class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-200">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-10 border-b border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm transition-colors duration-200">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-0.5">Angular + Tailwind</p>
+        <h1 class="text-xl font-bold">Theme System Demo</h1>
+      </div>
+      <app-theme-toggle />
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-6 py-10 space-y-10">
+
+    <!-- Color Palette -->
+    <section>
+      <h2 class="text-base font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">Color Palette</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <!-- Primary -->
+        <div class="card overflow-hidden">
+          <div class="h-16 bg-primary-600 dark:bg-primary-500 transition-colors duration-200"></div>
+          <div class="p-3">
+            <p class="text-sm font-semibold">Primary</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="dark:hidden">blue-600</span>
+              <span class="hidden dark:inline">blue-500</span>
+            </p>
+          </div>
+        </div>
+        <!-- Success -->
+        <div class="card overflow-hidden">
+          <div class="h-16 bg-green-600 dark:bg-green-400 transition-colors duration-200"></div>
+          <div class="p-3">
+            <p class="text-sm font-semibold">Success</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="dark:hidden">green-600</span>
+              <span class="hidden dark:inline">green-400</span>
+            </p>
+          </div>
+        </div>
+        <!-- Error -->
+        <div class="card overflow-hidden">
+          <div class="h-16 bg-red-600 dark:bg-red-400 transition-colors duration-200"></div>
+          <div class="p-3">
+            <p class="text-sm font-semibold">Error</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="dark:hidden">red-600</span>
+              <span class="hidden dark:inline">red-400</span>
+            </p>
+          </div>
+        </div>
+        <!-- Warning -->
+        <div class="card overflow-hidden">
+          <div class="h-16 bg-amber-500 dark:bg-amber-400 transition-colors duration-200"></div>
+          <div class="p-3">
+            <p class="text-sm font-semibold">Warning</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="dark:hidden">amber-500</span>
+              <span class="hidden dark:inline">amber-400</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Status Indicators -->
+    <section>
+      <h2 class="text-base font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">Status Indicators</h2>
+      <div class="card p-5">
+        <div class="flex flex-wrap gap-3 mb-4">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium
+                       bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 transition-colors duration-200">
+            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+            Success
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium
+                       bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 transition-colors duration-200">
+            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+            Error
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium
+                       bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 transition-colors duration-200">
+            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+            Warning
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium
+                       bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 transition-colors duration-200">
+            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+            Info
+          </span>
+        </div>
+        <!-- Alert banners -->
+        <div class="space-y-2">
+          <div class="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 transition-colors duration-200">
+            <svg class="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-sm text-green-700 dark:text-green-300">Profile updated successfully.</p>
+          </div>
+          <div class="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 transition-colors duration-200">
+            <svg class="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-sm text-red-700 dark:text-red-300">Something went wrong. Please try again.</p>
+          </div>
+          <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 transition-colors duration-200">
+            <svg class="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-sm text-amber-700 dark:text-amber-300">Your session will expire in 10 minutes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form Elements -->
+    <section>
+      <h2 class="text-base font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">Form Elements</h2>
+      <div class="card p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+            <input type="text" placeholder="Jane Smith" class="form-input-dark" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+            <input type="email" placeholder="jane@example.com" class="form-input-dark" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+            <select class="form-input-dark">
+              <option>Frontend Developer</option>
+              <option>Backend Developer</option>
+              <option>Full Stack Developer</option>
+              <option>Designer</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
+            <textarea rows="3" placeholder="Tell us about yourself..." class="form-input-dark"></textarea>
+          </div>
+          <div class="sm:col-span-2 flex items-center gap-2">
+            <input type="checkbox" id="terms"
+                   class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:text-primary-500
+                          bg-white dark:bg-gray-700 focus:ring-primary-500 transition-colors duration-200" />
+            <label for="terms" class="text-sm text-gray-700 dark:text-gray-300">
+              I agree to the <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline">terms and conditions</a>
+            </label>
+          </div>
+        </div>
+        <div class="mt-5 flex gap-3">
+          <button class="btn-primary">Save Profile</button>
+          <button class="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Typography & Spacing -->
+    <section>
+      <h2 class="text-base font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">Typography</h2>
+      <div class="card p-6 space-y-3">
+        <h1 class="text-4xl font-bold tracking-tight">Heading 1</h1>
+        <h2 class="text-3xl font-bold">Heading 2</h2>
+        <h3 class="text-2xl font-semibold">Heading 3</h3>
+        <p class="text-base text-gray-700 dark:text-gray-300 leading-relaxed max-w-prose">
+          Body text looks great in both themes. The color adapts seamlessly —
+          <span class="text-primary-600 dark:text-primary-400 font-medium">primary text</span>,
+          <span class="text-gray-500 dark:text-gray-400">muted text</span>, and
+          <code class="px-1.5 py-0.5 rounded text-sm bg-gray-100 dark:bg-gray-700 font-mono">inline code</code>
+          all transition smoothly.
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Small / muted text — captions, labels, helper copy.
+        </p>
+      </div>
+    </section>
+
+  </main>
+</div>
